@@ -1,9 +1,16 @@
+import { connection } from "websocket";
 import { Chat, Store, UserId } from "./Store";
 
+export interface User{
+    id: string;
+    name: string
+    conn: connection
+}
 
 export interface Room {
     roomId: string,
     chats: Chat[];
+    users: User[];
 }
 
 export class ImMemoryStore implements Store {
@@ -18,7 +25,8 @@ export class ImMemoryStore implements Store {
     initRoom(roomId: string) {
         this.store.set(roomId, {
             roomId,
-            chats: []
+            chats: [],
+            users: []
         })
     }
 
@@ -30,7 +38,7 @@ export class ImMemoryStore implements Store {
         return room.chats.reverse().slice(0, offset).slice(-1 * limit);
     }
 
-    addChat(userId: UserId, message: string, name: string, roomId: string, limit: number, offset: number) {
+    addChat(userId: UserId, message: string, name: string, roomId: string) {
 
         const room = this.store.get(roomId);
 
@@ -38,13 +46,16 @@ export class ImMemoryStore implements Store {
             return '';
         }
 
-        return room.chats.push({
+        const chat = {
             id : (this.gobalChatId++).toString(),
             userId,
             name,
             message,
             upvotes: []
-        })
+        }
+
+        room.chats.push(chat);
+        return chat;
 
 
     }
@@ -63,6 +74,7 @@ export class ImMemoryStore implements Store {
        if(chat){
         chat.upvotes.push(userId);
        }
+       return chat;
 
     }
 }
