@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+
+    <div style="display: flex; 
+    justify-content: center; 
+    flex-direction: column;
+    align-items: center;
+    ">
+        <h2>Live Chat</h2>
+        <div>
+            <label for="name">Name :</label>
+            <input type="text" name="name" id="username">
+            <button onclick="joinChat()">Join</button>
+        </div>
+        <p id="joinedStatus"></p>
+        <div>
+            <textarea style="width: 200px; height: 400px;" name="chatArea" id="chatarea" readonly></textarea>
+            <textarea style="display: block;" name="message" id="message" placeholder="message"></textarea>
+            <button onclick="sendChat()">Send</button>
+        </div>
+
+    </div>
+    <script>
+        const ws = new WebSocket('ws://localhost:8080', 'echo-protocol');
+        let username = '';
+        const chats = [];
+        ws.onopen = function () {
+
+        }
+
+        ws.onmessage = function (payload) {
+    let message;
+
+    // Check if `payload.data` is already an object
+    if (typeof payload.data === 'object') {
+        message = payload.data;
+    } else {
+        try {
+            message = JSON.parse(payload.data);
+
+        } catch (error) {
+            console.error('Error parsing JSON:', error);
+            return;  // Exit if parsing fails
+        }
+    }
+
+    console.log('incoming:', message);
+    const name = message.payload.name;
+    const chat = message.payload.message;
+    chats.push(`${name} : ${chat} `);
+
+    // Assuming `messageText` is a property in the data from the server
+    document.getElementById('chatarea').innerText = chats;
+};
+
+        function joinChat() {
+            const inputName = document.getElementById('username');
+            username = inputName.value;
+            console.log(username);
+            const joinStatus = document.getElementById('joinedStatus');
+            ws.send(JSON.stringify({
+                type: "JOIN_ROOM",
+                payload: {
+                    name: username,
+                    userId: Math.floor(Math.random()*1000),
+                    roomId: '1'
+                }
+            }))
+            joinStatus.innerText = "Joined room 1"
+        }
+
+        function sendChat() {
+            console.log(name);
+            const messageText = document.getElementById('message').value;
+            ws.send(JSON.stringify({
+                type: "SEND_MESSAGE",
+                payload: {
+                    userId: '1',
+                    roomId: '1',
+                    message: messageText
+                }
+            }))
+
+        }
+
+    </script>
+</body>
+
+</html>

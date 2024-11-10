@@ -1,8 +1,6 @@
 import { connection, server as WebSocketServer } from "websocket";
 import * as http from "http";
 import { IncomingMessage, InitMessageType, SupportedMessages, UpvoteMessageType, UserMessageType } from "./messages/incomingMessages";
-import { UserManager } from "./UserManager";
-import { Store } from "./store/Store";
 import { ImMemoryStore } from "./store/ImMemoryStore";
 import { OutGoingMessages, SupportedOutGoingMessages } from "./messages/outgoingMessages";
 
@@ -21,7 +19,7 @@ const wsServer = new WebSocketServer({
     autoAcceptConnections: false
 });
 
-const userManager = new UserManager();
+
 const store = new ImMemoryStore();
 
 function originIsAllowed(origin: any) {
@@ -54,22 +52,25 @@ wsServer.on('request', function(request) {
 });
 
 function handleMessage(ws: connection, message: IncomingMessage) {
-    console.log('handle message');
+    console.log('incoming message '+ JSON.stringify(message));
 
     if (message.type == SupportedMessages.JoinRoom) {
+        console.log('Join room '+ message.payload.roomId)
         const payload = message.payload;
-        userManager.addUser(payload.name, payload.userId, payload.roomId, ws);
+        store.addUser(payload.name, payload.userId, payload.roomId, ws);
     }
 
     if (message.type === SupportedMessages.SendMessage) {
+        console.log('send message '+message.payload.message)
         const payload = message.payload;
-        const user = userManager.getUser(payload.roomId, payload.userId);
+        const user = store.getUser(payload.roomId, payload.userId);
         if (!user) {
             console.error('user not found');
             return;
         }
        const chat = store.addChat(payload.userId, payload.message, user.name, payload.roomId);
         if(!chat){
+            console.error('error in adding chat')
             return;
         }
         const outGoingMessage: OutGoingMessages = {
@@ -82,12 +83,13 @@ function handleMessage(ws: connection, message: IncomingMessage) {
                 upvotes: 0
             }
         }
-        userManager.broadcast(payload.roomId, payload.userId, outGoingMessage)
+        store.broadcast(payload.roomId, payload.userId, outGoingMessage)
     }
 
     if (message.type === SupportedMessages.UpvoteMessage) {
+        console.log('upvote '+message.payload.chatId)
         const payload = message.payload;
-        const user = userManager.getUser(payload.roomId, payload.userId);
+        const user = store.getUser(payload.roomId, payload.userId);
         if (!user) {
             console.error('user not found');
             return;
@@ -107,6 +109,6 @@ function handleMessage(ws: connection, message: IncomingMessage) {
             }
         }
 
-        userManager.broadcast(payload.roomId, payload.userId, outGoingMessage)
+        store.broadcast(payload.roomId, payload.userId, outGoingMessage)
     }
 }

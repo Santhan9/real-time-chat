@@ -1,5 +1,6 @@
 import { connection } from "websocket";
 import { Chat, Store, UserId } from "./Store";
+import { OutGoingMessages } from "../messages/outgoingMessages";
 
 export interface User{
     id: string;
@@ -43,6 +44,7 @@ export class ImMemoryStore implements Store {
         const room = this.store.get(roomId);
 
         if (!room) {
+            console.log('no room found')
             return '';
         }
 
@@ -77,4 +79,60 @@ export class ImMemoryStore implements Store {
        return chat;
 
     }
+
+    addUser(name: string, userId: string, roomId: string, socket: connection) {
+        console.log(new Date()+' request for add User')
+
+        if (!this.store.get(roomId)) {
+            this.store.set(roomId, {
+                users: [],
+                roomId,
+                chats: []
+            })
+        }
+
+        this.store.get(roomId)?.users.push({
+            id: userId,
+            name,
+            conn: socket
+
+        })
+        console.log(new Date()+' user added')
+
+    }
+
+    removeUser(roomId: string, userId: string) {
+        const users = this.store.get(roomId)?.users;
+
+        if (users) {
+            users.filter(({ id }) => id !== userId)
+        }
+
+    }
+
+    getUser(roomId: string, userId: string): User | null {
+        const user = this.store.get(roomId)?.users.find(({ id }) => id === userId);
+        return user ?? null;
+    }
+
+    broadcast(roomId: string, userId: string, message: OutGoingMessages) {
+        console.log('message broadcasting '+message.payload)
+        const user = this.getUser(roomId, userId);
+        if (!user) {
+            console.error('User not found');
+            return
+        }
+        const room = this.store.get(roomId);
+        if (!room) {
+            console.error('room not found');
+            return
+        }
+        
+        room.users.forEach(({ conn }) => {
+            console.log('sending message '+JSON.stringify(message))
+            conn.send(JSON.stringify(message));
+        })
+    }
+
+    
 }
