@@ -60,6 +60,7 @@
     // Assuming `messageText` is a property in the data from the server
     document.getElementById('chatarea').innerText = chats;
 };
+        let userId = Math.floor(Math.random()*1000);
 
         function joinChat() {
             const inputName = document.getElementById('username');
@@ -70,7 +71,7 @@
                 type: "JOIN_ROOM",
                 payload: {
                     name: username,
-                    userId: Math.floor(Math.random()*1000),
+                    userId: userId,
                     roomId: '1'
                 }
             }))
@@ -83,7 +84,7 @@
             ws.send(JSON.stringify({
                 type: "SEND_MESSAGE",
                 payload: {
-                    userId: '1',
+                    userId: userId,
                     roomId: '1',
                     message: messageText
                 }

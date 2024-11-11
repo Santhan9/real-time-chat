@@ -97,7 +97,7 @@ export class ImMemoryStore implements Store {
             conn: socket
 
         })
-        console.log(new Date()+' user added')
+        console.log(new Date()+' user added '+this.store.get(roomId)?.users.length)
 
     }
 
@@ -112,7 +112,11 @@ export class ImMemoryStore implements Store {
 
     getUser(roomId: string, userId: string): User | null {
         const user = this.store.get(roomId)?.users.find(({ id }) => id === userId);
-        return user ?? null;
+        if(!user){
+            console.log('user is empty '+this.store.get(roomId)?.users[0].id+' '+userId)
+            return null
+        }
+        return user;
     }
 
     broadcast(roomId: string, userId: string, message: OutGoingMessages) {
